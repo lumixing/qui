@@ -19,6 +19,7 @@ Widget :: union #no_nil {
 	Div,
 	Text,
 	Button,
+	Image,
 }
 
 Direction :: enum {
@@ -40,11 +41,17 @@ Button :: struct {
 	text: string,
 }
 
+Image :: struct {
+	path: string,
+	width: Maybe(f32),
+}
+
 // pass by pointer maybe?
 element_delete :: proc(element: Element) {
 	switch widget in element.widget {
 	case Text:
 	case Button:
+	case Image:
 	case Div:
 		for child in widget.children {
 			element_delete(child)
@@ -96,6 +103,17 @@ element_size :: proc(element: ^Element) {
 		element.size.x = f32(rl.MeasureText(fmt.ctprint(widget.text), FONT_SIZE))
 		element.size.y = FONT_SIZE
 		element.size += element.padding * 2
+	case Image:
+		texture, ok := img_db[widget.path]
+		if !ok {
+			texture = rl.LoadTexture(fmt.ctprint(widget.path))
+			img_db[widget.path] = texture
+		}
+		element.size = {f32(texture.width), f32(texture.height)}
+		element.size += element.padding * 2
+		if w, ok := widget.width.?; ok {
+			element.size = w
+		}
 	}
 }
 
@@ -127,6 +145,8 @@ element_position :: proc(element: ^Element, anchor: vec2) {
 		element.position = anchor+element.padding
 	case Button:
 		element.position = anchor+element.padding
+	case Image:
+		element.position = anchor+element.padding
 	}
 }
 
@@ -135,9 +155,10 @@ element_id :: proc(element: Element) -> (id: string) {
 	case Div:
 	case Text:
 		id = fmt.aprintf("txt:%s", widget.text)
-		
 	case Button:
 		id = fmt.aprintf("btn:%s", widget.text)
+	case Image:
+		id = fmt.aprintf("img:%s", widget.path)
 	}
 
 	if eid, ok := element.id.?; ok {
@@ -161,8 +182,10 @@ element_id_w_db :: proc(element: Element) {
 	}
 }
 
+img_db: map[string]rl.Texture
+
 element_draw :: proc(element: Element) {
-	//rl.DrawRectangleV(element.position, element.size, {255, 0, 255, 50})
+	rl.DrawRectangleV(element.position, element.size, {255, 0, 255, 50})
 	switch widget in element.widget {
 	case Div:
 		for child in widget.children {
@@ -173,6 +196,10 @@ element_draw :: proc(element: Element) {
 	case Button:
 		rl.DrawRectangleV(element.position, element.size, {0, 255, 0, 100})
 		rl.DrawText(fmt.ctprint(widget.text), i32(element.position.x), i32(element.position.y), FONT_SIZE, rl.BLACK)
+	case Image:
+		texture := img_db[widget.path]  // asserted in element_size
+		//rl.DrawTextureV(texture, element.position, rl.WHITE)
+		rl.DrawTexturePro(texture, rect(0, {f32(texture.width), f32(texture.height)}), rect(element.position, element.size), 0, 0, rl.WHITE)
 	}
 }
 
@@ -199,31 +226,53 @@ main :: proc() {
 		//root_div: Div
 		//append(&div_stack, &root_div)
 
+		@(static)
+		fav_number := 67
+
 		div_start(); pad(8); gap(8)
-			div_start(.Horizontal); gap(8)
-				if button("click me") {
-					good += 1
-				}
-				text("clicked %d times", good)
-			div_end()
+			text("hello world!")
+			text("my fav number is %d", fav_number)
 
-			div_start(.Horizontal)
-				if button("type") {
-					shit += 1
-				}
-				hover("u tope %d shytes", shit)
-				for i in 0..<shit {
-					text("shit"); id(i)
-					if clicked() {
-						shit -= 1
-					}
-					hover("i am fish #%d", i+1)
-				}
-			div_end()
+			if button("increase fav number") {
+				fav_number += 1
+			}
 
-			text("psst! (hover me)")
-			hover("heyaaaaa!")
+			text("anyways, heres a cat")
+			image("carcar.png", 128)
+				hover("purr")
 		dd := div_end()
+
+		//div_start(); pad(8); gap(8)
+		//	div_start(.Horizontal); gap(8)
+		//		if button("click me") {
+		//			good += 1
+		//		}
+		//		text("clicked %d times", good)
+		//	div_end()
+
+		//	div_start(.Horizontal)
+		//		if button("type") {
+		//			shit += 1
+		//		}
+		//		hover("u tope %d shytes", shit)
+		//		for i in 0..<shit {
+		//			text("shit"); id(i)
+		//			if clicked() {
+		//				shit -= 1
+		//			}
+		//			hover("i am fish #%d", i+1)
+		//		}
+		//	div_end()
+
+		//	image("carcar.png", 64)
+		//	hover("purr~")
+		//	if clicked() {
+		//		fmt.println("meow!")
+		//	}
+
+		//	text("psst! (hover me)")
+		//	hover("heyaaaaa!")
+		//dd := div_end()
 
 		//if !true {
 		//	append(&root_div.children, Element{
@@ -327,6 +376,12 @@ text :: proc(fmtstr: string, args: ..any) {
 	//})
 }
 
+image :: proc(path: string, width: Maybe(f32) = nil) {
+	append(&(&last(div_stack[:]).widget.(Div)).children, Element{
+		widget = Image{path, width},
+	})
+}
+
 last :: #force_inline proc(a: []$T, loc := #caller_location) -> T {
 	if len(a) == 0 do panic("last_ptr", loc)
 	return a[len(a)-1]
@@ -384,7 +439,6 @@ clicked :: proc() -> bool {
 	current_div := last(div_stack[:])
 	//prev_elem := last_ptr(current_div^.children[:])
 	prev_elem := last_ptr((&current_div.widget.(Div)).children[:])
-	txt := prev_elem.widget.(Text).text
 	if rl.IsMouseButtonPressed(.LEFT) {
 		if rct, ok := w_db[element_id(prev_elem^)]; ok {
 			if rl.CheckCollisionRecs(rect(rl.GetMousePosition(), 1), rct) {
