@@ -12,6 +12,7 @@ Element :: struct {
 	widget: Widget,
 	id: Maybe(int),
 	padding: vec2,
+	inlined: bool,
 }
 
 Widget :: union #no_nil {
@@ -28,6 +29,7 @@ Direction :: enum {
 Div :: struct {
 	children: [dynamic]Element,  // def change to []Widget later!
 	direction: Direction,
+	gap: f32,
 }
 
 Text :: struct {
@@ -69,9 +71,11 @@ element_size :: proc(element: ^Element) {
 			}
 			element.size.x = max_width
 			element.size.y = sum_height
+			element.size += element.padding * 2
+			element.size.y += f32(len(widget.children)-1) * widget.gap
 		case .Horizontal:
-			sum_width: f32
 			max_height: f32
+			sum_width: f32
 			for &child in widget.children {
 				element_size(&child)
 				if max_height < child.size.y {
@@ -79,15 +83,19 @@ element_size :: proc(element: ^Element) {
 				}
 				sum_width += child.size.x
 			}
-			element.size.x = sum_width
 			element.size.y = max_height
+			element.size.x = sum_width
+			element.size += element.padding * 2
+			element.size.x += f32(len(widget.children)-1) * widget.gap
 		}
 	case Text:
 		element.size.x = f32(rl.MeasureText(fmt.ctprint(widget.text), FONT_SIZE))
 		element.size.y = FONT_SIZE
+		element.size += element.padding * 2
 	case Button:
 		element.size.x = f32(rl.MeasureText(fmt.ctprint(widget.text), FONT_SIZE))
 		element.size.y = FONT_SIZE
+		element.size += element.padding * 2
 	}
 }
 
@@ -103,20 +111,22 @@ element_position :: proc(element: ^Element, anchor: vec2) {
 		element.position = anchor
 		switch widget.direction {
 		case .Vertical:
-			for &child in widget.children {
-				element_position(&child, anchor)
+			for &child, child_idx in widget.children {
+				element_position(&child, anchor+element.padding)
 				anchor.y += child.size.y
+				anchor.y += widget.gap
 			}
 		case .Horizontal:
-			for &child in widget.children {
-				element_position(&child, anchor)
+			for &child, child_idx in widget.children {
+				element_position(&child, anchor+element.padding)
 				anchor.x += child.size.x
+				anchor.x += widget.gap
 			}
 		}
 	case Text:
-		element.position = anchor
+		element.position = anchor+element.padding
 	case Button:
-		element.position = anchor
+		element.position = anchor+element.padding
 	}
 }
 
@@ -152,7 +162,7 @@ element_id_w_db :: proc(element: Element) {
 }
 
 element_draw :: proc(element: Element) {
-	rl.DrawRectangleV(element.position, element.size, {255, 0, 255, 50})
+	//rl.DrawRectangleV(element.position, element.size, {255, 0, 255, 50})
 	switch widget in element.widget {
 	case Div:
 		for child in widget.children {
@@ -167,8 +177,7 @@ element_draw :: proc(element: Element) {
 }
 
 w_db: map[string]rl.Rectangle
-div_stack: [dynamic]^Div
-//ediv_stack: [dynamic]Element
+div_stack: [dynamic]^Element
 islands: [dynamic]Element
 
 main :: proc() {
@@ -190,13 +199,15 @@ main :: proc() {
 		//root_div: Div
 		//append(&div_stack, &root_div)
 
-		div_start()
-			if button("click me") {
-				good += 1
-			}
-			text("clicked %d times", good)
+		div_start(); pad(8); gap(8)
+			div_start(.Horizontal); gap(8)
+				if button("click me") {
+					good += 1
+				}
+				text("clicked %d times", good)
+			div_end()
 
-			div_start(.Horizontal); pad(16)
+			div_start(.Horizontal)
 				if button("type") {
 					shit += 1
 				}
@@ -286,42 +297,63 @@ main :: proc() {
 }
 
 div_start :: proc(direction: Direction = .Vertical) {
-	div := new(Div)
-	div.direction = direction
-	append(&div_stack, div)
+	elem := new(Element)
+	elem.widget = Div{
+		direction = direction,
+	}
+	append(&div_stack, elem)
 }
 
 div_end :: proc() -> Maybe(Element) {
 	if len(div_stack) == 1 {
-		return Element{widget = pop(&div_stack)^}
+		return pop(&div_stack)^
 	}
 
 	// i inlined this before so it first calced last then popped..
-	LOOL := Element{widget = pop(&div_stack)^}
-	append(&div_stack[len(div_stack)-1].children, LOOL)
+	//LOOL := Element{widget = pop(&div_stack)^}
+	LOOL := pop(&div_stack)
+	append(&(&last(div_stack[:]).widget.(Div)).children, LOOL^)
+	//append(&div_stack[len(div_stack)-1].children, LOOL)
 	return nil
 }
 
 text :: proc(fmtstr: string, args: ..any) {
-	append(&div_stack[len(div_stack)-1].children, Element{
+	// WTFF
+	append(&(&last(div_stack[:]).widget.(Div)).children, Element{
 		widget = Text{fmt.aprintf(fmtstr, ..args)},
 	})
+	//append(&div_stack[len(div_stack)-1].children, Element{
+	//	widget = Text{fmt.aprintf(fmtstr, ..args)},
+	//})
 }
 
-last_ptr :: proc(a: []$T) -> ^T {
+last :: #force_inline proc(a: []$T, loc := #caller_location) -> T {
+	if len(a) == 0 do panic("last_ptr", loc)
+	return a[len(a)-1]
+}
+
+last_ptr :: #force_inline proc(a: []$T, loc := #caller_location) -> ^T {
+	if len(a) == 0 do panic("last_ptr", loc)
+	return &a[len(a)-1]
+}
+
+last_ptr_safe :: #force_inline proc(a: []$T) -> Maybe(^T) {
+	if len(a) == 0 do return nil
 	return &a[len(a)-1]
 }
 
 id :: proc(id: int) {
-	current_div := last_ptr(div_stack[:])
-	prev_elem := last_ptr(current_div^.children[:])
+	current_div := last(div_stack[:])
+	//div := &current_div.widget.(Div)
+	prev_elem := last_ptr((&current_div.widget.(Div)).children[:])
 	prev_elem.id = id
 }
 
 hover :: proc(fmtstr: string, args: ..any) {
 	txt := fmt.aprintf(fmtstr, ..args)
-	current_div := last_ptr(div_stack[:])
-	prev_elem := last_ptr(current_div^.children[:])
+	current_div := last(div_stack[:])
+	//prev_elem := last_ptr(current_div^.children[:])
+	prev_elem := last_ptr((&current_div.widget.(Div)).children[:])
 	if rct, ok := w_db[element_id(prev_elem^)]; ok {
 		if rl.CheckCollisionRecs(rect(rl.GetMousePosition(), 1), rct) {
 			append(&islands, Element{
@@ -336,7 +368,8 @@ button :: proc(txt: string) -> bool {
 	el := Element{
 		widget = Button{text = txt},
 	}
-	append(&div_stack[len(div_stack)-1].children, el)
+	append(&(&last(div_stack[:]).widget.(Div)).children, el)
+	//append(&div_stack[len(div_stack)-1].children, el)
 	if rl.IsMouseButtonPressed(.LEFT) {
 		if rct, ok := w_db[element_id(el)]; ok {
 			if rl.CheckCollisionRecs(rect(rl.GetMousePosition(), 1), rct) {
@@ -348,8 +381,9 @@ button :: proc(txt: string) -> bool {
 }
 
 clicked :: proc() -> bool {
-	current_div := last_ptr(div_stack[:])
-	prev_elem := last_ptr(current_div^.children[:])
+	current_div := last(div_stack[:])
+	//prev_elem := last_ptr(current_div^.children[:])
+	prev_elem := last_ptr((&current_div.widget.(Div)).children[:])
 	txt := prev_elem.widget.(Text).text
 	if rl.IsMouseButtonPressed(.LEFT) {
 		if rct, ok := w_db[element_id(prev_elem^)]; ok {
@@ -361,8 +395,19 @@ clicked :: proc() -> bool {
 	return false
 }
 
-pad :: proc(px: f32) {
-	current_div := last_ptr(div_stack[:])
-	prev_elem := last_ptr(current_div^.children[:])
-	prev_elem.padding = px
+pad :: proc(px: vec2) {
+	last_ediv := last(div_stack[:])
+	if last_echild, ok := last_ptr_safe(last_ediv.widget.(Div).children[:]).?; ok {
+		last_echild.padding = px
+	} else {
+		last_ediv.padding = px
+	}
+}
+
+gap :: proc(px: f32) {
+	(&last(div_stack[:]).widget.(Div)).gap = px
+}
+
+same :: proc() {
+	last_ptr((&last(div_stack[:]).widget.(Div)).children[:]).inlined = true
 }
