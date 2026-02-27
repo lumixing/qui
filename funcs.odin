@@ -1,6 +1,7 @@
 #+vet explicit-allocators
 package qui
 
+import "core:fmt"
 import "core:slice"
 import rl "vendor:raylib"
 
@@ -38,6 +39,30 @@ text :: proc(text: string) {
 	elem.widget = wid
 	append(&div.children, elem)
 	state.last_elem = elem
+}
+
+input :: proc(text: ^string, placeholder := "") -> bool {
+	//context.allocator = state.frame_allocator
+	div, ok := slice.last(state.div_stack[:]).widget.(^Div)
+	assert(ok, "parent has to be a div")
+	elem := new(Element, state.frame_allocator)
+	wid := new(Input, state.frame_allocator)
+	elem.widget = wid
+	wid.text = text
+	wid.placeholder = placeholder
+	id := elem_id(elem)
+	if focused, ok := state.focused_inputs[id]; ok {
+		wid.focused = focused
+	}
+	append(&div.children, elem)
+	state.last_elem = elem
+
+	if clicked() {
+		wid.focused = !wid.focused
+		state.focused_inputs[id] = wid.focused
+	}
+
+	return false
 }
 
 BasicColor :: enum {
@@ -80,4 +105,12 @@ bg :: proc(color: Color, alpha: f32 = 1) {
 
 id :: proc(idx: int) {
 	state.last_elem.idx = idx
+}
+
+pad :: proc(padding: vec2) {
+	state.last_elem.style.padding = padding
+}
+
+grow_width :: proc() {
+	state.last_elem.style.grow_width = true
 }
