@@ -1,15 +1,20 @@
 #+vet explicit-allocators
 package qui
 
-import "core:fmt"
-import "core:slice"
 import "base:runtime"
+import "core:mem"
+import "core:slice"
 import rl "vendor:raylib"
 
 vec2 :: [2]f32
 
 state: struct {
-	allocator: runtime.Allocator,
+	main_allocator: mem.Allocator,
+
+	frame_buffer: []byte,
+	frame_arena: mem.Arena,
+	frame_allocator: mem.Allocator,
+
 	font: rl.Font,
 	root_div: Maybe(^Element),
 	prev_root_div: Maybe(^Element),
@@ -17,11 +22,24 @@ state: struct {
 	last_elem: Maybe(^Element),
 }
 
-// todo: cleanup
-init :: proc(allocator := context.allocator) {
-	state.allocator = allocator
+init :: proc(
+	allocator := context.allocator,
+	arena_size := 100 * mem.Megabyte,
+) {
+	state.main_allocator = allocator
+
+	state.frame_buffer = make([]byte, arena_size, state.main_allocator)
+	mem.arena_init(&state.frame_arena, state.frame_buffer)
+	state.frame_allocator = mem.arena_allocator(&state.frame_arena)
+
 	state.font = rl.LoadFontEx("inter.ttf", 24, nil, 0)
-	state.div_stack = make([dynamic]^Element, state.allocator)
+	state.div_stack = make([dynamic]^Element, state.main_allocator)
+}
+
+deinit :: proc() {
+	delete(state.frame_buffer, state.main_allocator)
+	delete(state.div_stack)
+	rl.UnloadFont(state.font)
 }
 
 begin :: proc() {
@@ -73,9 +91,9 @@ div_start :: proc(
 	const_size: vec2 = -1,  // -1 means no const size (here on both axes)
 	align_main := Align.Start,
 ) {
-	elem := new(Element, state.allocator)
+	elem := new(Element, state.frame_allocator)
 	div: Div
-	div.children = make([dynamic]Element, state.allocator)
+	div.children = make([dynamic]Element, state.frame_allocator)
 	div.style.direction = direction
 	div.style.gap = gap
 	div.style.const_size = const_size
@@ -109,7 +127,7 @@ Rect :: struct {
 }
 
 rect :: proc(size: vec2, color := rl.MAGENTA) {
-	elem := new(Element, state.allocator)
+	elem := new(Element, state.frame_allocator)
 	rect: Rect
 	elem.widget = rect
 	elem.size = size

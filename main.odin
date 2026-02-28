@@ -1,5 +1,7 @@
+#+vet explicit-allocators
 package main
 
+import "core:mem"
 import "core:fmt"
 import "qui"
 import rl "vendor:raylib"
@@ -10,27 +12,26 @@ main :: proc() {
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
 
-	qui.init()
+	qui.init(context.allocator)
+	defer qui.deinit()
 
 	for !rl.WindowShouldClose() {
+
 		qui.begin()
 
-		qui.div_start()
-			qui.div_start(
-				direction = .Horizontal,
-				padding = 8,
-				// gap = 8,
-				background_color = rl.RED,
-				const_size = {800/2, -1},
-				align_main = .SpaceBetween,
-			)
-				qui.rect(64)
-				qui.rect(64)
-				qui.rect(64)
-				qui.rect(64)
-				qui.rect(64)
-				qui.rect(64)
-			qui.div_end()
+		qui.div_start(
+			gap = 1,
+		)
+			for _ in 0..<32 {
+				qui.div_start(
+					direction = .Horizontal,
+					gap = 1,
+				)
+				for _ in 0..<32 {
+					qui.rect(16)
+				}
+				qui.div_end()
+			}
 		qui.div_end()
 
 		qui.elem_size(qui.state.root_div.?)
@@ -40,6 +41,9 @@ main :: proc() {
 		rl.ClearBackground(rl.RAYWHITE)
 
 		qui.elem_draw(qui.state.root_div.?)
+		rl.SetWindowTitle(rl.TextFormat("%d fps, %dkb mem", rl.GetFPS(), qui.state.frame_arena.offset/1024))
+
+		free_all(qui.state.frame_allocator)
 
 		rl.EndDrawing()
 
