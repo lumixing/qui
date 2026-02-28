@@ -1,5 +1,4 @@
 *
 !.gitignore
-!main.odin
-!other.odin
-!funcs.odin
+!*.odin
+!qui
