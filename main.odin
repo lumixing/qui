@@ -19,9 +19,14 @@ main :: proc() {
 			qui.div_start(
 				direction = .Horizontal,
 				padding = 8,
-				gap = 8,
+				// gap = 8,
 				background_color = rl.RED,
+				const_size = {800/2, -1},
+				align_main = .SpaceBetween,
 			)
+				qui.rect(64)
+				qui.rect(64)
+				qui.rect(64)
 				qui.rect(64)
 				qui.rect(64)
 				qui.rect(64)

@@ -52,7 +52,17 @@ Div :: struct {
 	style: struct {
 		direction: Direction,
 		gap: f32,
+		const_size: vec2,
+		align_main: Align,
+		align_cross: Align,
 	},
+}
+
+Align :: enum {
+	Start,
+	End,
+	Center,
+	SpaceBetween,
 }
 
 div_start :: proc(
@@ -61,12 +71,15 @@ div_start :: proc(
 	padding: f32 = 0,
 	background_color := rl.BLANK,
 	const_size: vec2 = -1,  // -1 means no const size (here on both axes)
+	align_main := Align.Start,
 ) {
 	elem := new(Element, state.allocator)
 	div: Div
 	div.children = make([dynamic]Element, state.allocator)
 	div.style.direction = direction
 	div.style.gap = gap
+	div.style.const_size = const_size
+	div.style.align_main = align_main
 	elem.widget = div
 	elem.style.padding = padding
 	elem.style.background_color = background_color
@@ -134,6 +147,13 @@ elem_size :: proc(elem: ^Element) {
 			elem.size = {sum, max}
 			elem.size.x += f32(len(widget.children)-1) * widget.style.gap
 		}
+
+		if widget.style.const_size.x != -1 {
+			elem.size.x = widget.style.const_size.x
+		}
+		if widget.style.const_size.y != -1 {
+			elem.size.y = widget.style.const_size.y
+		}
 	case Rect:  // already sized
 	}
 
@@ -146,6 +166,55 @@ elem_position :: proc(elem: ^Element, anchor: vec2) {
 	switch widget in elem.widget {
 	case Div:
 		elem.position = anchor
+
+		space_between_gap: f32
+
+		#partial switch widget.style.align_main {
+		case .Start:  // dont change anchor
+		case .SpaceBetween:
+			main_size: f32  // no gap! took a while to debug
+			switch widget.style.direction {
+			case .Vertical:
+				for &child in widget.children {
+					main_size += child.size.y
+				}
+				// anchor.y += elem.size.y - main_size - elem.style.padding.y * 2
+			case .Horizontal:
+				for &child in widget.children {
+					main_size += child.size.x
+				}
+				space_between_gap = (elem.size.x - main_size - elem.style.padding.x * 2) / f32(len(widget.children)-1)  // uh oh /0?
+			}
+		case .End:
+			main_size := f32(len(widget.children)-1)*widget.style.gap
+			switch widget.style.direction {
+			case .Vertical:
+				for &child in widget.children {
+					main_size += child.size.y
+				}
+				anchor.y += elem.size.y - main_size - elem.style.padding.y * 2
+			case .Horizontal:
+				for &child in widget.children {
+					main_size += child.size.x
+				}
+				anchor.x += elem.size.x - main_size - elem.style.padding.x * 2
+			}
+		case .Center:
+			main_size := f32(len(widget.children)-1)*widget.style.gap
+			switch widget.style.direction {
+			case .Vertical:
+				for &child in widget.children {
+					main_size += child.size.y
+				}
+				anchor.y += (elem.size.y - main_size - elem.style.padding.y * 2) / 2
+			case .Horizontal:
+				for &child in widget.children {
+					main_size += child.size.x
+				}
+				anchor.x += (elem.size.x - main_size - elem.style.padding.x * 2) / 2
+			}
+		}
+
 		switch widget.style.direction {
 		case .Vertical:
 			for &child in widget.children {
@@ -157,7 +226,11 @@ elem_position :: proc(elem: ^Element, anchor: vec2) {
 			for &child in widget.children {
 				elem_position(&child, anchor + elem.style.padding)
 				anchor.x += child.size.x
-				anchor.x += widget.style.gap
+				if widget.style.align_main == .SpaceBetween {
+					anchor.x += space_between_gap
+				} else {
+					anchor.x += widget.style.gap
+				}
 			}
 		}
 	case Rect:
