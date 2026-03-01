@@ -1,6 +1,7 @@
 #+vet explicit-allocators
 package qui
 
+import "core:fmt"
 import "base:runtime"
 import "core:mem"
 import "core:slice"
@@ -73,7 +74,8 @@ Div :: struct {
 		const_size: vec2,
 		align_main: Align,
 		align_cross: Align,
-		grow: bool,
+		grow_main: bool,
+		grow_cross: bool,
 	},
 }
 
@@ -96,7 +98,9 @@ div_start :: proc(
 	background_color := rl.BLANK,
 	const_size: vec2 = -1,  // -1 means no const size (here on both axes)
 	align_main := Align.Start,
-	grow := false,
+	align_cross := Align.Start,
+	grow_main := false,
+	grow_cross := false,
 ) -> bool {
 	elem := new(Element, state.frame_allocator)
 	div: Div
@@ -105,7 +109,9 @@ div_start :: proc(
 	div.style.gap = gap
 	div.style.const_size = const_size
 	div.style.align_main = align_main
-	div.style.grow = grow
+	div.style.align_cross = align_cross
+	div.style.grow_main = grow_main
+	div.style.grow_cross = grow_cross
 	elem.widget = div
 	elem.style.padding = padding
 	elem.style.background_color = background_color
@@ -188,19 +194,35 @@ elem_size :: proc(elem: ^Element) {
 }
 
 // 2nd size pass for grow
-elem_size2 :: proc(elem: ^Element, parent_size: vec2) {
+elem_size2 :: proc(elem: ^Element, parent_elem: ^Element, idx: int) {
 	switch widget in elem.widget {
 	case Div:
-		for &child in widget.children {
-			elem_size2(&child, elem.size)
-		}
-		if widget.style.grow {
+		if widget.style.grow_main {
 			switch widget.style.direction {
 			case .Vertical:
-				elem.size.y = parent_size.y
+				elem.size.y = parent_elem.size.y
 			case .Horizontal:
-				elem.size.x = parent_size.x
+				elem.size.x = parent_elem.size.x
 			}
+		}
+		if widget.style.grow_cross {
+			switch widget.style.direction {
+			case .Vertical:
+				remaining_size := parent_elem.size.x - parent_elem.style.padding.x - elem.style.padding.x*2
+				parent_children := parent_elem.widget.(Div).children
+				for child, child_idx in parent_children {
+					if idx == child_idx {
+						continue  // dont calc ourselves in remaining_size
+					}
+					remaining_size -= child.size.x
+				}
+				elem.size.x = remaining_size
+			case .Horizontal:
+				elem.size.y = parent_elem.size.y
+			}
+		}
+		for &child, child_idx in widget.children {
+			elem_size2(&child, elem, child_idx)
 		}
 	case Rect:
 	}
@@ -261,6 +283,39 @@ elem_position :: proc(elem: ^Element, anchor: vec2) {
 			}
 		}
 
+		// yes yes, dry this code out
+		#partial switch widget.style.align_cross {
+		case .Start:  // dont change anchor
+		case .End:
+			main_size := f32(len(widget.children)-1)*widget.style.gap
+			switch widget.style.direction {
+			case .Vertical:
+				for &child in widget.children {
+					main_size += child.size.x
+				}
+				anchor.x += elem.size.x - main_size - elem.style.padding.x * 2
+			case .Horizontal:
+				for &child in widget.children {
+					main_size += child.size.y
+				}
+				anchor.y += elem.size.y - main_size - elem.style.padding.y * 2
+			}
+		case .Center:
+			main_size := f32(len(widget.children)-1)*widget.style.gap
+			switch widget.style.direction {
+			case .Vertical:
+				for &child in widget.children {
+					main_size += child.size.x
+				}
+				anchor.x += (elem.size.x - main_size - elem.style.padding.y * 2) / 2
+			case .Horizontal:
+				for &child in widget.children {
+					main_size += child.size.y
+				}
+				anchor.y += (elem.size.y - main_size - elem.style.padding.y * 2) / 2
+			}
+		}
+
 		switch widget.style.direction {
 		case .Vertical:
 			for &child in widget.children {
@@ -302,4 +357,8 @@ elem_draw :: proc(elem: ^Element, debug := false) {
 		}
 	case Rect:  // nothing to do
 	}
+}
+
+dbgf :: proc(v: $T, vv := #caller_expression) {
+	fmt.printfln("%v = %#v", vv, v)
 }

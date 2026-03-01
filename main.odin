@@ -23,7 +23,60 @@ main :: proc() {
 				background_color = rl.RED,
 				direction = .Horizontal,
 				padding = 8,
-				grow = true,
+				grow_main = true,
+				align_main = .SpaceBetween,
+			) {
+				if qui.div_start(gap=8, direction=.Horizontal) {
+					qui.rect(32)
+					qui.rect(32)
+					qui.rect(32)
+				}
+				if qui.div_start(gap=8, direction=.Horizontal) {
+					qui.rect(32)
+					qui.rect(32)
+					qui.rect(32)
+				}
+				if qui.div_start(gap=8, direction=.Horizontal) {
+					qui.rect(32)
+					qui.rect(32)
+					qui.rect(32)
+				}
+			}
+
+			if qui.div_start(
+				padding = 8,
+				background_color = rl.GREEN,
+				direction = .Horizontal,
+				grow_main = true,
+				// grow_cross = true,
+			) {
+				if qui.div_start(
+					background_color = rl.PINK,
+					padding = 8,
+				) {
+					qui.rect(64)
+				}
+				if qui.div_start(
+					background_color = rl.YELLOW,
+					padding = 8,
+					grow_cross = true,
+					align_cross = .Center,
+				) {
+					qui.rect(64)
+				}
+				if qui.div_start(
+					background_color = rl.GOLD,
+					padding = 8,
+				) {
+					qui.rect(64)
+				}
+			}
+
+			if qui.div_start(
+				background_color = rl.BLUE,
+				direction = .Horizontal,
+				padding = 8,
+				grow_main = true,
 				align_main = .SpaceBetween,
 			) {
 				if qui.div_start(gap=8, direction=.Horizontal) {
@@ -45,7 +98,7 @@ main :: proc() {
 		}
 
 		qui.elem_size(qui.state.root_div.?)
-		qui.elem_size2(qui.state.root_div.?, 0)
+		qui.elem_size2(qui.state.root_div.?, nil, 0)
 		qui.elem_position(qui.state.root_div.?, 0)
 
 		rl.BeginDrawing()
