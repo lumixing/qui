@@ -24,7 +24,7 @@ state: struct {
 
 init :: proc(
 	allocator := context.allocator,
-	arena_size := 100 * mem.Megabyte,
+	arena_size := 4 * mem.Megabyte,
 ) {
 	state.main_allocator = allocator
 
@@ -32,14 +32,14 @@ init :: proc(
 	mem.arena_init(&state.frame_arena, state.frame_buffer)
 	state.frame_allocator = mem.arena_allocator(&state.frame_arena)
 
-	state.font = rl.LoadFontEx("inter.ttf", 24, nil, 0)
+	// state.font = rl.LoadFontEx("inter.ttf", 24, nil, 0)
 	state.div_stack = make([dynamic]^Element, state.main_allocator)
 }
 
 deinit :: proc() {
 	delete(state.frame_buffer, state.main_allocator)
 	delete(state.div_stack)
-	rl.UnloadFont(state.font)
+	// rl.UnloadFont(state.font)
 }
 
 begin :: proc() {
@@ -73,6 +73,7 @@ Div :: struct {
 		const_size: vec2,
 		align_main: Align,
 		align_cross: Align,
+		grow: bool,
 	},
 }
 
@@ -90,6 +91,7 @@ div_start :: proc(
 	background_color := rl.BLANK,
 	const_size: vec2 = -1,  // -1 means no const size (here on both axes)
 	align_main := Align.Start,
+	grow := false,
 ) {
 	elem := new(Element, state.frame_allocator)
 	div: Div
@@ -98,6 +100,7 @@ div_start :: proc(
 	div.style.gap = gap
 	div.style.const_size = const_size
 	div.style.align_main = align_main
+	div.style.grow = grow
 	elem.widget = div
 	elem.style.padding = padding
 	elem.style.background_color = background_color
@@ -176,6 +179,25 @@ elem_size :: proc(elem: ^Element) {
 	}
 
 	elem.size += elem.style.padding * 2
+}
+
+// 2nd size pass for grow
+elem_size2 :: proc(elem: ^Element, parent_size: vec2) {
+	switch widget in elem.widget {
+	case Div:
+		for &child in widget.children {
+			elem_size2(&child, elem.size)
+		}
+		if widget.style.grow {
+			switch widget.style.direction {
+			case .Vertical:
+				elem.size.y = parent_size.y
+			case .Horizontal:
+				elem.size.x = parent_size.x
+			}
+		}
+	case Rect:
+	}
 }
 
 elem_position :: proc(elem: ^Element, anchor: vec2) {

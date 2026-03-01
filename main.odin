@@ -16,41 +16,78 @@ main :: proc() {
 	defer qui.deinit()
 
 	for !rl.WindowShouldClose() {
-
 		qui.begin()
 
-		qui.div_start(
-			gap = 1,
-		)
-			for _ in 0..<32 {
-				qui.div_start(
-					direction = .Horizontal,
-					gap = 1,
-				)
-				for _ in 0..<32 {
-					qui.rect(16)
-				}
+		qui.div_start(const_size = {800, 600})
+			qui.div_start(
+				background_color = rl.RED,
+				direction = .Horizontal,
+				padding = 8,
+				grow = true,
+				align_main = .SpaceBetween,
+			); {
+				defer qui.div_end()
+				qui.div_start(gap=8, direction=.Horizontal)
+					qui.rect(32)
+					qui.rect(32)
+					qui.rect(32)
+				qui.div_end()
+				qui.div_start(gap=8, direction=.Horizontal)
+					qui.rect(32)
+					qui.rect(32)
+					qui.rect(32)
+				qui.div_end()
+				qui.div_start(gap=8, direction=.Horizontal)
+					qui.rect(32)
+					qui.rect(32)
+					qui.rect(32)
+				qui.div_end()
+			}
+
+			qui.div_start(
+				background_color = rl.BLUE,
+				direction = .Horizontal,
+				padding = 8,
+				grow = true,
+				align_main = .SpaceBetween,
+			); {
+				defer qui.div_end()
+				qui.div_start(gap=8, direction=.Horizontal)
+					qui.rect(32)
+					qui.rect(32)
+					qui.rect(32)
+				qui.div_end()
+				qui.div_start(gap=8, direction=.Horizontal)
+					qui.rect(32)
+					qui.rect(32)
+					qui.rect(32)
+				qui.div_end()
+				qui.div_start(gap=8, direction=.Horizontal)
+					qui.rect(32)
+					qui.rect(32)
+					qui.rect(32)
 				qui.div_end()
 			}
 		qui.div_end()
 
 		qui.elem_size(qui.state.root_div.?)
+		qui.elem_size2(qui.state.root_div.?, 0)
 		qui.elem_position(qui.state.root_div.?, 0)
 
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.RAYWHITE)
 
-		qui.elem_draw(qui.state.root_div.?)
+		qui.elem_draw(qui.state.root_div.?, rl.IsKeyDown(.GRAVE))
 		rl.SetWindowTitle(rl.TextFormat("%d fps, %dkb mem", rl.GetFPS(), qui.state.frame_arena.offset/1024))
 
 		free_all(qui.state.frame_allocator)
 
 		rl.EndDrawing()
 
-		if rl.IsKeyPressed(.GRAVE) {
-			dbgf(qui.state.root_div)
-			break
-		}
+		// if rl.IsKeyPressed(.GRAVE) {
+		// 	dbgf(qui.state.root_div)
+		// 	break
+		// }
 	}
 }
 
