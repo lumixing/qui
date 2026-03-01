@@ -84,6 +84,11 @@ Align :: enum {
 	SpaceBetween,
 }
 
+@(require_results)  // guard for not in if
+@(deferred_none=div_end)
+// use this is an if statement like
+// if div_start() { rect() }
+// so it does div_end automatically
 div_start :: proc(
 	direction := Direction.Vertical,
 	gap: f32 = 0,
@@ -92,7 +97,7 @@ div_start :: proc(
 	const_size: vec2 = -1,  // -1 means no const size (here on both axes)
 	align_main := Align.Start,
 	grow := false,
-) {
+) -> bool {
 	elem := new(Element, state.frame_allocator)
 	div: Div
 	div.children = make([dynamic]Element, state.frame_allocator)
@@ -106,6 +111,7 @@ div_start :: proc(
 	elem.style.background_color = background_color
 	append(&state.div_stack, elem)
 	state.last_elem = elem
+	return true
 }
 
 div_end :: proc() {

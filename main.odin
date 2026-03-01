@@ -18,57 +18,31 @@ main :: proc() {
 	for !rl.WindowShouldClose() {
 		qui.begin()
 
-		qui.div_start(const_size = {800, 600})
-			qui.div_start(
+		if qui.div_start(const_size = {800, 600}) {
+			if qui.div_start(
 				background_color = rl.RED,
 				direction = .Horizontal,
 				padding = 8,
 				grow = true,
 				align_main = .SpaceBetween,
-			); {
-				defer qui.div_end()
-				qui.div_start(gap=8, direction=.Horizontal)
+			) {
+				if qui.div_start(gap=8, direction=.Horizontal) {
 					qui.rect(32)
 					qui.rect(32)
 					qui.rect(32)
-				qui.div_end()
-				qui.div_start(gap=8, direction=.Horizontal)
+				}
+				if qui.div_start(gap=8, direction=.Horizontal) {
 					qui.rect(32)
 					qui.rect(32)
 					qui.rect(32)
-				qui.div_end()
-				qui.div_start(gap=8, direction=.Horizontal)
+				}
+				if qui.div_start(gap=8, direction=.Horizontal) {
 					qui.rect(32)
 					qui.rect(32)
 					qui.rect(32)
-				qui.div_end()
+				}
 			}
-
-			qui.div_start(
-				background_color = rl.BLUE,
-				direction = .Horizontal,
-				padding = 8,
-				grow = true,
-				align_main = .SpaceBetween,
-			); {
-				defer qui.div_end()
-				qui.div_start(gap=8, direction=.Horizontal)
-					qui.rect(32)
-					qui.rect(32)
-					qui.rect(32)
-				qui.div_end()
-				qui.div_start(gap=8, direction=.Horizontal)
-					qui.rect(32)
-					qui.rect(32)
-					qui.rect(32)
-				qui.div_end()
-				qui.div_start(gap=8, direction=.Horizontal)
-					qui.rect(32)
-					qui.rect(32)
-					qui.rect(32)
-				qui.div_end()
-			}
-		qui.div_end()
+		}
 
 		qui.elem_size(qui.state.root_div.?)
 		qui.elem_size2(qui.state.root_div.?, 0)
