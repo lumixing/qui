@@ -71,7 +71,8 @@ elem_draw :: proc(elem: ^Element, debug := false) {
 	rl.DrawRectangleV(elem.position, elem.size, elem.style.background_color)
 	// rl.DrawRectangleV(elem.position-elem.style.padding, elem.size, elem.style.background_color)
 	if debug {
-		rl.DrawRectangleLinesEx(_rect(elem.position-elem.style.padding, elem.size), 1, rl.RED)
+		rl.DrawRectangleLinesEx(_rect(elem.position, elem.size), 1, rl.MAGENTA)
+		rl.DrawRectangleLinesEx(_rect(elem.position+elem.style.padding, inner_size(elem)), 1, rl.MAGENTA)
 	}
 
 	switch widget in elem.widget {

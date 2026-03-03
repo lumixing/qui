@@ -6,7 +6,7 @@ import rl "vendor:raylib"
 
 Element :: struct {
 	position: vec2,
-	size: vec2,
+	size: vec2,  // includes padding
 	widget: Widget,
 	style: Style,
 }
@@ -29,6 +29,8 @@ Div :: struct {
 		const_size: vec2,
 		align_main: Align,
 		align_cross: Align,
+
+		// these depend on *parent* (not current) direction
 		grow_main: bool,
 		grow_cross: bool,
 	},
@@ -96,7 +98,7 @@ Rect :: struct {
 
 }
 
-rect :: proc(size: vec2, color := rl.MAGENTA) {
+rect :: proc(size: vec2, color := rl.BLACK) {
 	elem := new(Element, state.frame_allocator)
 	rect: Rect
 	elem.widget = rect

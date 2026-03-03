@@ -1,32 +1,29 @@
 #+vet explicit-allocators
 package qui
 
+main_cross_idx :: proc(swap_cond: bool) -> (Main := 0, Cross := 1) {
+	if swap_cond {
+		Main, Cross = 1, 0
+	}
+	return
+}
+
 elem_size :: proc(elem: ^Element) {
 	switch &widget in elem.widget {
 	case Div:
+		Main, Cross := main_cross_idx(widget.style.direction == .Horizontal)
 		max, sum: f32
-		switch widget.style.direction {
-		case .Vertical:
-			for &child in widget.children {
-				elem_size(&child)
-				if max < child.size.x {
-					max = child.size.x
-				}
-				sum += child.size.y
+
+		for &child in widget.children {
+			elem_size(&child)
+			if max < child.size[Main] {
+				max = child.size[Main]
 			}
-			elem.size = {max, sum}
-			elem.size.y += f32(len(widget.children)-1) * widget.style.gap
-		case .Horizontal:
-			for &child in widget.children {
-				elem_size(&child)
-				if max < child.size.y {
-					max = child.size.y
-				}
-				sum += child.size.x
-			}
-			elem.size = {sum, max}
-			elem.size.x += f32(len(widget.children)-1) * widget.style.gap
+			sum += child.size[Cross]
 		}
+		elem.size[Main] = max
+		elem.size[Cross] = sum
+		elem.size[Cross] += f32(len(widget.children)-1)*widget.style.gap
 
 		if widget.style.const_size.x != -1 {
 			elem.size.x = widget.style.const_size.x
@@ -34,10 +31,14 @@ elem_size :: proc(elem: ^Element) {
 		if widget.style.const_size.y != -1 {
 			elem.size.y = widget.style.const_size.y
 		}
-	case Rect:  // already sized
+	case Rect:
 	}
 
 	elem.size += elem.style.padding * 2
+}
+
+inner_size :: proc(elem: ^Element) -> vec2 {
+	return elem.size - elem.style.padding * 2
 }
 
 // 2nd size pass for grow
@@ -45,29 +46,26 @@ elem_size2 :: proc(elem: ^Element, parent_elem: ^Element, idx: int) {
 	switch widget in elem.widget {
 	case Div:
 		if widget.style.grow_main {
-			switch widget.style.direction {
-			case .Vertical:
-				elem.size.y = parent_elem.size.y
-			case .Horizontal:
-				elem.size.x = parent_elem.size.x
-			}
-		}
-		if widget.style.grow_cross {
-			switch widget.style.direction {
-			case .Vertical:
-				remaining_size := parent_elem.size.x - parent_elem.style.padding.x - elem.style.padding.x*2
-				parent_children := parent_elem.widget.(Div).children
-				for child, child_idx in parent_children {
-					if idx == child_idx {
-						continue  // dont calc ourselves in remaining_size
-					}
-					remaining_size -= child.size.x
+			parent_div := parent_elem.widget.(Div)
+			Main, Cross := main_cross_idx(parent_div.style.direction != .Horizontal)
+			remaining_size := inner_size(parent_elem)[Main]
+			parent_children := parent_div.children
+			remaining_size -= f32(len(parent_children)-1) * parent_elem.widget.(Div).style.gap
+			for child, child_idx in parent_children {
+				if idx == child_idx {
+					continue
 				}
-				elem.size.x = remaining_size
-			case .Horizontal:
-				elem.size.y = parent_elem.size.y
+				remaining_size -= child.size[Main]
 			}
+			elem.size[Main] = remaining_size
 		}
+
+		if widget.style.grow_cross {
+			parent_div := parent_elem.widget.(Div)
+			Main, Cross := main_cross_idx(parent_div.style.direction != .Horizontal)
+			elem.size[Cross] = inner_size(parent_elem)[Cross]
+		}
+
 		for &child, child_idx in widget.children {
 			elem_size2(&child, elem, child_idx)
 		}
