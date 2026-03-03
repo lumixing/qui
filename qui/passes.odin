@@ -81,102 +81,48 @@ elem_position :: proc(elem: ^Element, anchor: vec2) {
 		elem.position = anchor
 
 		space_between_gap: f32
+		Main, Cross := main_cross_idx(widget.style.direction != .Horizontal)
 
-		#partial switch widget.style.align_main {
+		switch widget.style.align_main {
 		case .Start:  // dont change anchor
 		case .SpaceBetween:
 			main_size: f32  // no gap! took a while to debug
-			switch widget.style.direction {
-			case .Vertical:
-				for &child in widget.children {
-					main_size += child.size.y
-				}
-				// anchor.y += elem.size.y - main_size - elem.style.padding.y * 2
-			case .Horizontal:
-				for &child in widget.children {
-					main_size += child.size.x
-				}
-				space_between_gap = (elem.size.x - main_size - elem.style.padding.x * 2) / f32(len(widget.children)-1)  // uh oh /0?
+			for &child in widget.children {
+				main_size += child.size[Main]
 			}
+			space_between_gap = (elem.size[Main] - main_size - elem.style.padding[Main] * 2) / f32(len(widget.children)-1)  // uh oh /0?
 		case .End:
 			main_size := f32(len(widget.children)-1)*widget.style.gap
-			switch widget.style.direction {
-			case .Vertical:
-				for &child in widget.children {
-					main_size += child.size.y
-				}
-				anchor.y += elem.size.y - main_size - elem.style.padding.y * 2
-			case .Horizontal:
-				for &child in widget.children {
-					main_size += child.size.x
-				}
-				anchor.x += elem.size.x - main_size - elem.style.padding.x * 2
+			for &child in widget.children {
+				main_size += child.size[Main]
 			}
+			anchor[Main] += elem.size[Main] - main_size - elem.style.padding[Main] * 2
 		case .Center:
 			main_size := f32(len(widget.children)-1)*widget.style.gap
-			switch widget.style.direction {
-			case .Vertical:
-				for &child in widget.children {
-					main_size += child.size.y
-				}
-				anchor.y += (elem.size.y - main_size - elem.style.padding.y * 2) / 2
-			case .Horizontal:
-				for &child in widget.children {
-					main_size += child.size.x
-				}
-				anchor.x += (elem.size.x - main_size - elem.style.padding.x * 2) / 2
+			for &child in widget.children {
+				main_size += child.size[Main]
 			}
+			anchor[Main] += (elem.size[Main] - main_size - elem.style.padding[Main] * 2) / 2
 		}
 
-		// yes yes, dry this code out
-		#partial switch widget.style.align_cross {
-		case .Start:  // dont change anchor
-		case .End:
-			main_size := f32(len(widget.children)-1)*widget.style.gap
-			switch widget.style.direction {
-			case .Vertical:
-				for &child in widget.children {
-					main_size += child.size.x
-				}
-				anchor.x += elem.size.x - main_size - elem.style.padding.x * 2
-			case .Horizontal:
-				for &child in widget.children {
-					main_size += child.size.y
-				}
-				anchor.y += elem.size.y - main_size - elem.style.padding.y * 2
+		for &child in widget.children {
+			align_cross_offset: vec2
+			#partial switch widget.style.align_cross {
+			case .Start:  // do nothing
+			case .End:
+				align_cross_offset[Cross] = (inner_size(elem) - child.size)[Cross]
+			case .Center:
+				align_cross_offset[Cross] = (inner_size(elem) - child.size)[Cross] / 2
+			case:
+				dbgf(widget.style.align_cross)
+				unimplemented()
 			}
-		case .Center:
-			main_size := f32(len(widget.children)-1)*widget.style.gap
-			switch widget.style.direction {
-			case .Vertical:
-				for &child in widget.children {
-					main_size += child.size.x
-				}
-				anchor.x += (elem.size.x - main_size - elem.style.padding.y * 2) / 2
-			case .Horizontal:
-				for &child in widget.children {
-					main_size += child.size.y
-				}
-				anchor.y += (elem.size.y - main_size - elem.style.padding.y * 2) / 2
-			}
-		}
-
-		switch widget.style.direction {
-		case .Vertical:
-			for &child in widget.children {
-				elem_position(&child, anchor + elem.style.padding)
-				anchor.y += child.size.y
-				anchor.y += widget.style.gap
-			}
-		case .Horizontal:
-			for &child in widget.children {
-				elem_position(&child, anchor + elem.style.padding)
-				anchor.x += child.size.x
-				if widget.style.align_main == .SpaceBetween {
-					anchor.x += space_between_gap
-				} else {
-					anchor.x += widget.style.gap
-				}
+			elem_position(&child, anchor + elem.style.padding + align_cross_offset)
+			anchor[Main] += child.size[Main]
+			if widget.style.align_main == .SpaceBetween {
+				anchor[Main] += space_between_gap
+			} else {
+				anchor[Main] += widget.style.gap
 			}
 		}
 	case Rect:

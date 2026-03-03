@@ -6,6 +6,7 @@ import rl "vendor:raylib"
 
 main :: proc() {
 	rl.SetTraceLogLevel(.WARNING)
+	rl.SetConfigFlags({.WINDOW_RESIZABLE})
 	rl.InitWindow(800, 600, "qui example")
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
@@ -16,7 +17,6 @@ main :: proc() {
 	for !rl.WindowShouldClose() {
 		qui.begin()
 
-		// grow_test()
 		spotify()
 
 		qui.end()
@@ -29,34 +29,6 @@ main :: proc() {
 		qui.aftercare()
 
 		rl.EndDrawing()
-	}
-}
-
-grow_test :: proc() {
-	if qui.div_start(
-		const_size = {400, 300},
-		padding = 8,
-		gap = 8,
-		// direction = .Horizontal,
-		// background_color = rl.ColorAlpha(rl.RED, 0.2),
-	) {
-		if qui.div_start(
-			const_size = 64,
-			padding = 8,
-			background_color = rl.RED,
-			grow_main = true,
-		) {}
-		if qui.div_start(
-			const_size = 64,
-			padding = 8,
-			background_color = rl.GREEN,
-			grow_cross = true,
-		) {}
-		if qui.div_start(
-			const_size = 32,
-			padding = 8,
-			background_color = rl.BLUE,
-		) {}
 	}
 }
 
@@ -76,8 +48,7 @@ spotify :: proc() {
 			}
 			if qui.div_start(gap=8, direction=.Horizontal) {
 				qui.rect(32)
-				qui.rect(32)
-				qui.rect(32)
+				qui.rect({256, 32})
 			}
 			if qui.div_start(gap=8, direction=.Horizontal) {
 				qui.rect(32)
@@ -133,16 +104,42 @@ spotify :: proc() {
 			padding = 8,
 			grow_cross = true,
 			align_main = .SpaceBetween,
+			align_cross = .Center,
 		) {
-			if qui.div_start(gap=8, direction=.Horizontal) {
-				qui.rect(32)
-				qui.rect(32)
+			if qui.div_start(
+				gap = 8,
+				direction = .Horizontal,
+				align_cross = .Center,
+			) {
+				qui.rect(64)
+				if qui.div_start(
+					align_main = .SpaceBetween,
+					grow_cross = true,
+				) {
+					qui.rect({128, 24})
+					qui.rect({128, 16})
+					qui.rect({128, 16})
+				}
 				qui.rect(32)
 			}
-			if qui.div_start(gap=8, direction=.Horizontal) {
-				qui.rect(32)
-				qui.rect(32)
-				qui.rect(32)
+			if qui.div_start(
+				gap = 8,
+				align_cross = .Center,
+			) {
+				if qui.div_start(
+					direction = .Horizontal,
+					gap = 8,
+					align_cross = .Center,
+				) {
+					qui.rect(32)
+					qui.rect(32)
+					qui.rect(48)
+					qui.rect(32)
+					qui.rect(32)
+				}
+				if qui.div_start() {
+					qui.rect({256, 4})
+				}
 			}
 			if qui.div_start(gap=8, direction=.Horizontal) {
 				qui.rect(32)
@@ -153,11 +150,19 @@ spotify :: proc() {
 	}
 
 	if qui.div_start(
-		const_size = {800, 600},
+		// const_size = {800, 600},
+		const_size = window_size(),
 		gap = 8,
 	) {
 		top()
 		middle()
 		bottom()
+	}
+}
+
+window_size :: proc() -> [2]f32 {
+	return {
+		f32(rl.GetScreenWidth()),
+		f32(rl.GetScreenHeight()),
 	}
 }
