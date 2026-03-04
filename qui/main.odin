@@ -6,8 +6,10 @@ import "base:runtime"
 import "core:mem"
 import rl "vendor:raylib"
 
+@(private)
 vec2 :: [2]f32
 
+@(private)
 state: struct {
 	main_allocator: mem.Allocator,
 
@@ -20,6 +22,10 @@ state: struct {
 	prev_root_div: Maybe(^Element),
 	div_stack: [dynamic]^Element,
 	last_elem: Maybe(^Element),
+}
+
+get_frame_arena :: proc() -> mem.Arena {
+	return state.frame_arena
 }
 
 init :: proc(
@@ -63,10 +69,12 @@ aftercare :: proc() {
 	free_all(state.frame_allocator)
 }
 
+@(private)
 _rect :: proc(pos, size: vec2) -> rl.Rectangle {
 	return {pos.x, pos.y, size.x, size.y}
 }
 
+@(private)
 elem_draw :: proc(elem: ^Element, debug := false) {
 	rl.DrawRectangleV(elem.position, elem.size, elem.style.background_color)
 	// rl.DrawRectangleV(elem.position-elem.style.padding, elem.size, elem.style.background_color)
@@ -84,6 +92,7 @@ elem_draw :: proc(elem: ^Element, debug := false) {
 	}
 }
 
+@(private)
 dbgf :: proc(v: $T, vv := #caller_expression) {
 	fmt.printfln("%v = %#v", vv, v)
 }

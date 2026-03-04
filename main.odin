@@ -25,7 +25,7 @@ main :: proc() {
 		rl.ClearBackground(rl.RAYWHITE)
 
 		qui.draw()
-		rl.SetWindowTitle(rl.TextFormat("%d fps, %dkb mem", rl.GetFPS(), qui.state.frame_arena.offset/1024))
+		rl.SetWindowTitle(rl.TextFormat("%d fps, %dkb mem", rl.GetFPS(), qui.get_frame_arena().offset/1024))
 		qui.aftercare()
 
 		rl.EndDrawing()

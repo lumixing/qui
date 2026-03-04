@@ -1,6 +1,7 @@
 #+vet explicit-allocators
 package qui
 
+@(private)
 main_cross_idx :: proc(swap_cond: bool) -> (Main := 0, Cross := 1) {
 	if swap_cond {
 		Main, Cross = 1, 0
@@ -8,6 +9,7 @@ main_cross_idx :: proc(swap_cond: bool) -> (Main := 0, Cross := 1) {
 	return
 }
 
+@(private)
 elem_size :: proc(elem: ^Element) {
 	switch &widget in elem.widget {
 	case Div:
@@ -37,11 +39,13 @@ elem_size :: proc(elem: ^Element) {
 	elem.size += elem.style.padding * 2
 }
 
+@(private)
 inner_size :: proc(elem: ^Element) -> vec2 {
 	return elem.size - elem.style.padding * 2
 }
 
 // 2nd size pass for grow
+@(private)
 elem_size2 :: proc(elem: ^Element, parent_elem: ^Element, idx: int) {
 	switch widget in elem.widget {
 	case Div:
@@ -73,6 +77,7 @@ elem_size2 :: proc(elem: ^Element, parent_elem: ^Element, idx: int) {
 	}
 }
 
+@(private)
 elem_position :: proc(elem: ^Element, anchor: vec2) {
 	anchor := anchor
 
