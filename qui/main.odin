@@ -38,14 +38,14 @@ init :: proc(
 	mem.arena_init(&state.frame_arena, state.frame_buffer)
 	state.frame_allocator = mem.arena_allocator(&state.frame_arena)
 
-	// state.font = rl.LoadFontEx("inter.ttf", 24, nil, 0)
+	state.font = rl.LoadFontEx("inter.ttf", 24, nil, 0)
 	state.div_stack = make([dynamic]^Element, state.main_allocator)
 }
 
 deinit :: proc() {
 	delete(state.frame_buffer, state.main_allocator)
 	delete(state.div_stack)
-	// rl.UnloadFont(state.font)
+	rl.UnloadFont(state.font)
 }
 
 begin :: proc() {
@@ -77,8 +77,14 @@ _rect :: proc(pos, size: vec2) -> rl.Rectangle {
 
 @(private)
 elem_draw :: proc(elem: ^Element, debug := false) {
-	rl.DrawRectangleV(elem.position, elem.size, elem.style.background_color)
-	// rl.DrawRectangleV(elem.position-elem.style.padding, elem.size, elem.style.background_color)
+	// hack
+	#partial switch widget in elem.widget {
+	case Text:
+		rl.DrawRectangleV(elem.position-elem.style.padding, elem.size, elem.style.background_color)
+	case:
+		rl.DrawRectangleV(elem.position, elem.size, elem.style.background_color)
+	}
+
 	if debug {
 		rl.DrawRectangleLinesEx(_rect(elem.position, elem.size), 1, rl.MAGENTA)
 		rl.DrawRectangleLinesEx(_rect(elem.position+elem.style.padding, inner_size(elem)), 1, rl.MAGENTA)
@@ -90,6 +96,13 @@ elem_draw :: proc(elem: ^Element, debug := false) {
 			elem_draw(&child, debug)
 		}
 	case Rect:  // nothing to do
+	case Text:
+		SPACING :: 1
+		rl.DrawTextEx(
+			state.font, rl.TextFormat("%s", widget.text),
+			elem.position, f32(state.font.baseSize),
+			SPACING, widget.style.color,
+		)
 	}
 }
 

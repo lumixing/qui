@@ -2,6 +2,8 @@
 package qui
 
 import "core:fmt"
+import rl "vendor:raylib"
+
 @(private)
 main_cross_idx :: proc(swap_cond: bool) -> (Main := 0, Cross := 1) {
 	if swap_cond {
@@ -34,7 +36,10 @@ elem_size :: proc(elem: ^Element) {
 		if widget.style.const_size.y != -1 {
 			elem.size.y = widget.style.const_size.y
 		}
-	case Rect:
+	case Rect:  // size is already known
+	case Text:
+		SPACING :: 1
+		elem.size = rl.MeasureTextEx(state.font, rl.TextFormat("%s", widget.text), f32(state.font.baseSize), SPACING)
 	}
 
 	elem.size += elem.style.padding * 2
@@ -75,6 +80,7 @@ elem_size2 :: proc(elem: ^Element, parent_elem: ^Element, idx: int) {
 			elem_size2(&child, elem, child_idx)
 		}
 	case Rect:
+	case Text:
 	}
 }
 
@@ -133,6 +139,8 @@ elem_position :: proc(elem: ^Element, anchor: vec2) {
 		}
 	case Rect:
 		elem.position = anchor + elem.style.padding
+	case Text:
+		elem.position = anchor + elem.style.padding
 	}
 }
 
@@ -143,6 +151,9 @@ elem_id :: proc(elem: ^Element) -> (id: string) {
 		id = fmt.aprintf("div.%d", elem.idx, allocator = state.frame_allocator)
 	case Rect:
 		id = fmt.aprintf("rect.%d", elem.idx, allocator = state.frame_allocator)
+	case Text:
+		// todo: store fmtstr and do text.%q{fmtstr}.%d{idx} ??
+		id = fmt.aprintf("text.%d", elem.idx, allocator = state.frame_allocator)
 	}
 
 	return

@@ -17,7 +17,14 @@ main :: proc() {
 	for !rl.WindowShouldClose() {
 		qui.begin()
 
-		spotify()
+		//spotify()
+		if qui.div_start() {
+			qui.text(
+				"Add time",
+				padding = {16, 8},
+				background_color = {0, 0, 0, 50},
+			)
+		}
 
 		qui.end()
 

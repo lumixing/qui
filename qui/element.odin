@@ -1,6 +1,7 @@
 #+vet explicit-allocators
 package qui
 
+import "core:fmt"
 import "core:slice"
 import rl "vendor:raylib"
 
@@ -13,6 +14,10 @@ Element :: struct {
 	idx: int,
 }
 
+idx :: proc(idx: int) {
+	state.last_elem.?.idx = idx
+}
+
 Style :: struct {
 	background_color: rl.Color,
 	padding: vec2,
@@ -21,6 +26,7 @@ Style :: struct {
 Widget :: union #no_nil {
 	Div,
 	Rect,
+	Text,
 }
 
 Div :: struct {
@@ -106,7 +112,33 @@ rect :: proc(size: vec2, color := rl.BLACK) {
 	elem.widget = rect
 	elem.size = size
 	elem.style.background_color = color
-	// append(&state.div_stack, elem)
+	last_div_elem := slice.last(state.div_stack[:])
+	last_div := &last_div_elem.widget.(Div)
+	append(&last_div.children, elem^)
+	state.last_elem = elem
+}
+
+Text :: struct {
+	text: string,
+	style: struct {
+		color: rl.Color,
+	},
+}
+
+text :: proc(
+	fmtstr: string,
+	args: ..any,
+	color := rl.BLACK,
+	background_color := rl.BLANK,
+	padding: vec2 = 0,
+) {
+	elem := new(Element, state.frame_allocator)
+	text: Text
+	text.text = fmt.aprintf(fmtstr, ..args, allocator = state.frame_allocator)
+	text.style.color = color
+	elem.widget = text
+	elem.style.background_color = background_color
+	elem.style.padding = padding
 	last_div_elem := slice.last(state.div_stack[:])
 	last_div := &last_div_elem.widget.(Div)
 	append(&last_div.children, elem^)
