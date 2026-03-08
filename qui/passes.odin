@@ -140,7 +140,8 @@ elem_position :: proc(elem: ^Element, anchor: vec2) {
 	case Rect:
 		elem.position = anchor + elem.style.padding
 	case Text:
-		elem.position = anchor + elem.style.padding
+		//elem.position = anchor + elem.style.padding
+		elem.position = anchor
 	}
 }
 

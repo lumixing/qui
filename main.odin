@@ -1,8 +1,25 @@
 #+vet explicit-allocators
 package main
 
+import "core:fmt"
 import "qui"
 import rl "vendor:raylib"
+
+clicked :: proc() -> bool {
+	if rl.IsMouseButtonPressed(.LEFT) {
+		id := qui.elem_id(qui.state.last_elem.?)
+		elem, ok := qui.find_elem_by_id(qui.state.prev_root_div.?, id).?
+		if !ok {
+			//fmt.println("couldnt find", id)
+			//qui.print_elem_tree(qui.state.prev_root_div.?)
+			return false
+		}
+		mouse_rect := qui._rect(rl.GetMousePosition(), 1)
+		elem_rect := qui._rect(elem.position, elem.size)
+		return rl.CheckCollisionRecs(mouse_rect, elem_rect)
+	}
+	return false
+}
 
 main :: proc() {
 	rl.SetTraceLogLevel(.WARNING)
@@ -14,6 +31,8 @@ main :: proc() {
 	qui.init(context.allocator)
 	defer qui.deinit()
 
+	times: [dynamic]f64
+
 	for !rl.WindowShouldClose() {
 		qui.begin()
 
@@ -24,8 +43,17 @@ main :: proc() {
 				padding = {16, 8},
 				background_color = {0, 0, 0, 50},
 			); qui.idx(69)
-			if rl.IsKeyPressed(.SPACE) {
-				qui.dbgf(qui.find_elem_by_id(qui.state.prev_root_div.?, qui.elem_id(qui.state.last_elem.?)))
+			if clicked() {
+				append(&times, rl.GetTime())
+			}
+			
+			for time, time_idx in times {
+				qui.text("%f", time, padding=4)
+				qui.idx(time_idx)
+				if clicked() {
+					//qui.dbgf(time_idx)
+					ordered_remove(&times, time_idx)
+				}
 			}
 		}
 

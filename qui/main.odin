@@ -31,6 +31,24 @@ state: struct {
 	last_elem: Maybe(^Element),
 }
 
+print_elem_tree :: proc(elem: ^Element, depth := 0) {
+	for _ in 0..<depth {
+		fmt.print("_   ")
+	}
+	switch widget in elem.widget {
+	case Div:  fmt.print("Div")
+	case Rect: fmt.print("Rect")
+	case Text: fmt.print("Text")
+	}
+	fmt.printfln("(%q)", elem.id)
+	#partial switch widget in elem.widget {
+	case Div:
+		for child in widget.children {
+			print_elem_tree(child, depth+1)
+		}
+	}
+}
+
 find_elem_by_id :: proc(elem: ^Element, id: string) -> Maybe(^Element) {
 	if elem_id(elem) == id {
 		return elem
@@ -39,7 +57,8 @@ find_elem_by_id :: proc(elem: ^Element, id: string) -> Maybe(^Element) {
 	#partial switch &widget in elem.widget {
 	case Div:
 		for child in widget.children {
-			return find_elem_by_id(child, id)
+			e := find_elem_by_id(child, id).? or_continue
+			return e
 		}
 	}
 
@@ -108,7 +127,7 @@ aftercare :: proc() {
 	state.using_a = !state.using_a
 }
 
-@(private)
+//@(private)
 _rect :: proc(pos, size: vec2) -> rl.Rectangle {
 	return {pos.x, pos.y, size.x, size.y}
 }
@@ -116,12 +135,12 @@ _rect :: proc(pos, size: vec2) -> rl.Rectangle {
 @(private)
 elem_draw :: proc(elem: ^Element, debug := false) {
 	// hack
-	#partial switch widget in elem.widget {
-	case Text:
-		rl.DrawRectangleV(elem.position-elem.style.padding, elem.size, elem.style.background_color)
-	case:
+	//#partial switch widget in elem.widget {
+	//case Text:
+	//	rl.DrawRectangleV(elem.position-elem.style.padding, elem.size, elem.style.background_color)
+	//case:
 		rl.DrawRectangleV(elem.position, elem.size, elem.style.background_color)
-	}
+	//}
 
 	if debug {
 		rl.DrawRectangleLinesEx(_rect(elem.position, elem.size), 1, rl.MAGENTA)
@@ -138,7 +157,7 @@ elem_draw :: proc(elem: ^Element, debug := false) {
 		SPACING :: 1
 		rl.DrawTextEx(
 			state.font, rl.TextFormat("%s", widget.text),
-			elem.position, f32(state.font.baseSize),
+			elem.position+elem.style.padding, f32(state.font.baseSize),
 			SPACING, widget.style.color,
 		)
 	}
