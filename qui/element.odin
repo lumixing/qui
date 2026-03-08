@@ -9,6 +9,8 @@ Element :: struct {
 	size: vec2,  // includes padding
 	widget: Widget,
 	style: Style,
+	id: string,
+	idx: int,
 }
 
 Style :: struct {

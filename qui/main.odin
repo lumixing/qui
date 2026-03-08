@@ -59,6 +59,7 @@ end :: proc() {
 	elem_size(state.root_div.?)
 	elem_size2(state.root_div.?, nil, 0)
 	elem_position(state.root_div.?, 0)
+	elem_id_pass(state.root_div.?)
 }
 
 draw :: proc() {

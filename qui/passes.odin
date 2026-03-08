@@ -1,6 +1,7 @@
 #+vet explicit-allocators
 package qui
 
+import "core:fmt"
 @(private)
 main_cross_idx :: proc(swap_cond: bool) -> (Main := 0, Cross := 1) {
 	if swap_cond {
@@ -132,5 +133,28 @@ elem_position :: proc(elem: ^Element, anchor: vec2) {
 		}
 	case Rect:
 		elem.position = anchor + elem.style.padding
+	}
+}
+
+@(private)
+elem_id :: proc(elem: ^Element) -> (id: string) {
+	switch widget in elem.widget {
+	case Div:
+		id = fmt.aprintf("div.%d", elem.idx, allocator = state.frame_allocator)
+	case Rect:
+		id = fmt.aprintf("rect.%d", elem.idx, allocator = state.frame_allocator)
+	}
+
+	return
+}
+
+@(private)
+elem_id_pass :: proc(elem: ^Element) {
+	elem.id = elem_id(elem)
+	#partial switch widget in elem.widget {
+	case Div:
+		for &child in widget.children {
+			elem_id_pass(&child)
+		}
 	}
 }
