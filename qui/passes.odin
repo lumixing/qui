@@ -19,8 +19,8 @@ elem_size :: proc(elem: ^Element) {
 		Main, Cross := main_cross_idx(widget.style.direction == .Horizontal)
 		max, sum: f32
 
-		for &child in widget.children {
-			elem_size(&child)
+		for child in widget.children {
+			elem_size(child)
 			if max < child.size[Main] {
 				max = child.size[Main]
 			}
@@ -76,8 +76,8 @@ elem_size2 :: proc(elem: ^Element, parent_elem: ^Element, idx: int) {
 			elem.size[Cross] = inner_size(parent_elem)[Cross]
 		}
 
-		for &child, child_idx in widget.children {
-			elem_size2(&child, elem, child_idx)
+		for child, child_idx in widget.children {
+			elem_size2(child, elem, child_idx)
 		}
 	case Rect:
 	case Text:
@@ -117,7 +117,7 @@ elem_position :: proc(elem: ^Element, anchor: vec2) {
 			anchor[Main] += (elem.size[Main] - main_size - elem.style.padding[Main] * 2) / 2
 		}
 
-		for &child in widget.children {
+		for child in widget.children {
 			align_cross_offset: vec2
 			#partial switch widget.style.align_cross {
 			case .Start:  // do nothing
@@ -129,7 +129,7 @@ elem_position :: proc(elem: ^Element, anchor: vec2) {
 				dbgf(widget.style.align_cross)
 				unimplemented()
 			}
-			elem_position(&child, anchor + elem.style.padding + align_cross_offset)
+			elem_position(child, anchor + elem.style.padding + align_cross_offset)
 			anchor[Main] += child.size[Main]
 			if widget.style.align_main == .SpaceBetween {
 				anchor[Main] += space_between_gap
@@ -144,7 +144,7 @@ elem_position :: proc(elem: ^Element, anchor: vec2) {
 	}
 }
 
-@(private)
+//@(private)
 elem_id :: proc(elem: ^Element) -> (id: string) {
 	switch widget in elem.widget {
 	case Div:
@@ -153,6 +153,7 @@ elem_id :: proc(elem: ^Element) -> (id: string) {
 		id = fmt.aprintf("rect.%d", elem.idx, allocator = state.frame_allocator)
 	case Text:
 		// todo: store fmtstr and do text.%q{fmtstr}.%d{idx} ??
+		//dbgf(elem.idx)
 		id = fmt.aprintf("text.%d", elem.idx, allocator = state.frame_allocator)
 	}
 
@@ -162,10 +163,11 @@ elem_id :: proc(elem: ^Element) -> (id: string) {
 @(private)
 elem_id_pass :: proc(elem: ^Element) {
 	elem.id = elem_id(elem)
+	//dbgf(elem.id)
 	#partial switch widget in elem.widget {
 	case Div:
-		for &child in widget.children {
-			elem_id_pass(&child)
+		for child in widget.children {
+			elem_id_pass(child)
 		}
 	}
 }

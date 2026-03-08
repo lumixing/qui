@@ -30,7 +30,7 @@ Widget :: union #no_nil {
 }
 
 Div :: struct {
-	children: [dynamic]Element,
+	children: [dynamic]^Element,
 	style: struct {
 		direction: Direction,
 		gap: f32,
@@ -74,7 +74,7 @@ div_start :: proc(
 ) -> bool {
 	elem := new(Element, state.frame_allocator)
 	div: Div
-	div.children = make([dynamic]Element, state.frame_allocator)
+	div.children = make([dynamic]^Element, state.frame_allocator)
 	div.style.direction = direction
 	div.style.gap = gap
 	div.style.const_size = const_size
@@ -99,7 +99,7 @@ div_end :: proc() {
 	}
 	last_div_elem := slice.last(state.div_stack[:])
 	last_div := &last_div_elem.widget.(Div)
-	append(&last_div.children, elem^)
+	append(&last_div.children, elem)
 }
 
 Rect :: struct {
@@ -114,7 +114,7 @@ rect :: proc(size: vec2, color := rl.BLACK) {
 	elem.style.background_color = color
 	last_div_elem := slice.last(state.div_stack[:])
 	last_div := &last_div_elem.widget.(Div)
-	append(&last_div.children, elem^)
+	append(&last_div.children, elem)
 	state.last_elem = elem
 }
 
@@ -141,6 +141,6 @@ text :: proc(
 	elem.style.padding = padding
 	last_div_elem := slice.last(state.div_stack[:])
 	last_div := &last_div_elem.widget.(Div)
-	append(&last_div.children, elem^)
+	append(&last_div.children, elem)
 	state.last_elem = elem
 }

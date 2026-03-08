@@ -9,12 +9,19 @@ import rl "vendor:raylib"
 @(private)
 vec2 :: [2]f32
 
-@(private)
+//@(private)
 state: struct {
 	main_allocator: mem.Allocator,
 
-	frame_buffer: []byte,
-	frame_arena: mem.Arena,
+	a_frame_buffer: []byte,
+	a_frame_arena: mem.Arena,
+	a_frame_allocator: mem.Allocator,
+
+	b_frame_buffer: []byte,
+	b_frame_arena: mem.Arena,
+	b_frame_allocator: mem.Allocator,
+
+	using_a: bool,
 	frame_allocator: mem.Allocator,
 
 	font: rl.Font,
@@ -24,8 +31,23 @@ state: struct {
 	last_elem: Maybe(^Element),
 }
 
+find_elem_by_id :: proc(elem: ^Element, id: string) -> Maybe(^Element) {
+	if elem_id(elem) == id {
+		return elem
+	}
+
+	#partial switch &widget in elem.widget {
+	case Div:
+		for child in widget.children {
+			return find_elem_by_id(child, id)
+		}
+	}
+
+	return nil
+}
+
 get_frame_arena :: proc() -> mem.Arena {
-	return state.frame_arena
+	return state.using_a ? state.a_frame_arena : state.b_frame_arena
 }
 
 init :: proc(
@@ -34,16 +56,24 @@ init :: proc(
 ) {
 	state.main_allocator = allocator
 
-	state.frame_buffer = make([]byte, arena_size, state.main_allocator)
-	mem.arena_init(&state.frame_arena, state.frame_buffer)
-	state.frame_allocator = mem.arena_allocator(&state.frame_arena)
+	state.a_frame_buffer = make([]byte, arena_size, state.main_allocator)
+	mem.arena_init(&state.a_frame_arena, state.a_frame_buffer)
+	state.a_frame_allocator = mem.arena_allocator(&state.a_frame_arena)
+
+	state.b_frame_buffer = make([]byte, arena_size, state.main_allocator)
+	mem.arena_init(&state.b_frame_arena, state.b_frame_buffer)
+	state.b_frame_allocator = mem.arena_allocator(&state.b_frame_arena)
+
+	state.using_a = true
+	state.frame_allocator = state.a_frame_allocator
 
 	state.font = rl.LoadFontEx("inter.ttf", 24, nil, 0)
 	state.div_stack = make([dynamic]^Element, state.main_allocator)
 }
 
 deinit :: proc() {
-	delete(state.frame_buffer, state.main_allocator)
+	delete(state.a_frame_buffer, state.main_allocator)
+	delete(state.b_frame_buffer, state.main_allocator)
 	delete(state.div_stack)
 	rl.UnloadFont(state.font)
 }
@@ -67,7 +97,15 @@ draw :: proc() {
 }
 
 aftercare :: proc() {
-	free_all(state.frame_allocator)
+	state.prev_root_div = state.root_div
+	if state.using_a {
+		free_all(state.b_frame_allocator)
+		state.frame_allocator = state.b_frame_allocator
+	} else {
+		free_all(state.a_frame_allocator)
+		state.frame_allocator = state.a_frame_allocator
+	}
+	state.using_a = !state.using_a
 }
 
 @(private)
@@ -92,8 +130,8 @@ elem_draw :: proc(elem: ^Element, debug := false) {
 
 	switch widget in elem.widget {
 	case Div:
-		for &child in widget.children {
-			elem_draw(&child, debug)
+		for child in widget.children {
+			elem_draw(child, debug)
 		}
 	case Rect:  // nothing to do
 	case Text:
@@ -106,7 +144,7 @@ elem_draw :: proc(elem: ^Element, debug := false) {
 	}
 }
 
-@(private)
+//@(private)
 dbgf :: proc(v: $T, vv := #caller_expression) {
 	fmt.printfln("%v = %#v", vv, v)
 }

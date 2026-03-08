@@ -23,7 +23,10 @@ main :: proc() {
 				"Add time",
 				padding = {16, 8},
 				background_color = {0, 0, 0, 50},
-			)
+			); qui.idx(69)
+			if rl.IsKeyPressed(.SPACE) {
+				qui.dbgf(qui.find_elem_by_id(qui.state.prev_root_div.?, qui.elem_id(qui.state.last_elem.?)))
+			}
 		}
 
 		qui.end()
@@ -32,7 +35,14 @@ main :: proc() {
 		rl.ClearBackground(rl.RAYWHITE)
 
 		qui.draw()
-		rl.SetWindowTitle(rl.TextFormat("%d fps, %dkb mem", rl.GetFPS(), qui.get_frame_arena().offset/1024))
+		//rl.SetWindowTitle(rl.TextFormat("%d fps, %dkb mem", rl.GetFPS(), qui.get_frame_arena().offset/1024))
+		rl.SetWindowTitle(rl.TextFormat(
+			"%d fps, %dkb+%dkb mem (%v)",
+			rl.GetFPS(),
+			qui.state.a_frame_arena.offset/1024,
+			qui.state.b_frame_arena.offset/1024,
+			qui.state.using_a,
+		))
 		qui.aftercare()
 
 		rl.EndDrawing()
