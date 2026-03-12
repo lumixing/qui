@@ -18,6 +18,14 @@ idx :: proc(idx: int) {
 	state.last_elem.?.idx = idx
 }
 
+color :: proc(color: rl.Color) {
+	(&state.last_elem.?.widget.(Text)).style.color = color
+}
+
+background_color :: proc(color: rl.Color) {
+	state.last_elem.?.style.background_color = color
+}
+
 Style :: struct {
 	background_color: rl.Color,
 	padding: vec2,

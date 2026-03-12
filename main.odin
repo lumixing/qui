@@ -1,24 +1,34 @@
 #+vet explicit-allocators
 package main
 
-import "core:fmt"
 import "qui"
 import rl "vendor:raylib"
 
 clicked :: proc() -> bool {
 	if rl.IsMouseButtonPressed(.LEFT) {
-		id := qui.elem_id(qui.state.last_elem.?)
-		elem, ok := qui.find_elem_by_id(qui.state.prev_root_div.?, id).?
-		if !ok {
-			//fmt.println("couldnt find", id)
-			//qui.print_elem_tree(qui.state.prev_root_div.?)
-			return false
-		}
-		mouse_rect := qui._rect(rl.GetMousePosition(), 1)
-		elem_rect := qui._rect(elem.position, elem.size)
-		return rl.CheckCollisionRecs(mouse_rect, elem_rect)
+		return hovered()
 	}
 	return false
+}
+
+hovered :: proc() -> bool {
+	id := qui.elem_id(qui.state.last_elem.?)
+	prev_root_div := qui.state.prev_root_div.? or_return
+	elem := qui.find_elem_by_id(prev_root_div, id).? or_return
+	mouse_rect := qui._rect(rl.GetMousePosition(), 1)
+	elem_rect := qui._rect(elem.position, elem.size)
+	return rl.CheckCollisionRecs(mouse_rect, elem_rect)
+}
+
+// example user-space widget
+button :: proc(text: string) -> bool {
+	qui.text(
+		text,
+		padding = {16, 8},
+		background_color = {0, 0, 0, 20},
+	)
+	qui.idx(69)  // temp
+	return clicked()
 }
 
 main :: proc() {
@@ -38,21 +48,22 @@ main :: proc() {
 
 		//spotify()
 		if qui.div_start() {
-			qui.text(
-				"Add time",
-				padding = {16, 8},
-				background_color = {0, 0, 0, 50},
-			); qui.idx(69)
-			if clicked() {
+			if button("Add time") {
 				append(&times, rl.GetTime())
+			}
+			if hovered() {
+				qui.background_color({0, 0, 0, 30})
 			}
 			
 			for time, time_idx in times {
-				qui.text("%f", time, padding=4)
+				qui.text("%f", time, padding={8, 4})
 				qui.idx(time_idx)
 				if clicked() {
-					//qui.dbgf(time_idx)
 					ordered_remove(&times, time_idx)
+				}
+				if hovered() {
+					qui.color(rl.RED)
+					qui.background_color({0, 0, 0, 20})
 				}
 			}
 		}
