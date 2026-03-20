@@ -31,6 +31,22 @@ state: struct {
 	last_elem: Maybe(^Element),
 }
 
+clicked :: proc() -> bool {
+	if rl.IsMouseButtonPressed(.LEFT) {
+		return hovered()
+	}
+	return false
+}
+
+hovered :: proc() -> bool {
+	id := elem_id(state.last_elem.?)
+	prev_root_div := state.prev_root_div.? or_return
+	elem := find_elem_by_id(prev_root_div, id).? or_return
+	mouse_rect := _rect(rl.GetMousePosition(), 1)
+	elem_rect := _rect(elem.position, elem.size)
+	return rl.CheckCollisionRecs(mouse_rect, elem_rect)
+}
+
 print_elem_tree :: proc(elem: ^Element, depth := 0) {
 	for _ in 0..<depth {
 		fmt.print("_   ")

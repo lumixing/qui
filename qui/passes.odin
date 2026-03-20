@@ -155,7 +155,7 @@ elem_id :: proc(elem: ^Element) -> (id: string) {
 	case Text:
 		// todo: store fmtstr and do text.%q{fmtstr}.%d{idx} ??
 		//dbgf(elem.idx)
-		id = fmt.aprintf("text.%d", elem.idx, allocator = state.frame_allocator)
+		id = fmt.aprintf("text.%s.%d", widget.fmtstr, elem.idx, allocator = state.frame_allocator)
 	}
 
 	return

@@ -1,5 +1,5 @@
 #+vet explicit-allocators
-package main
+package qui_main
 
 import "qui"
 import rl "vendor:raylib"
@@ -47,7 +47,7 @@ main :: proc() {
 		qui.begin()
 
 		//spotify()
-		if qui.div_start() {
+		if qui.div() {
 			if button("Add time") {
 				append(&times, rl.GetTime())
 			}
@@ -90,23 +90,23 @@ main :: proc() {
 
 spotify :: proc() {
 	top :: proc() {
-		if qui.div_start(
+		if qui.div(
 			background_color = rl.RED,
 			direction = .Horizontal,
 			padding = 8,
 			grow_cross = true,
 			align_main = .SpaceBetween,
 		) {
-			if qui.div_start(gap=8, direction=.Horizontal) {
+			if qui.div(gap=8, direction=.Horizontal) {
 				qui.rect(32)
 				qui.rect(32)
 				qui.rect(32)
 			}
-			if qui.div_start(gap=8, direction=.Horizontal) {
+			if qui.div(gap=8, direction=.Horizontal) {
 				qui.rect(32)
 				qui.rect({256, 32})
 			}
-			if qui.div_start(gap=8, direction=.Horizontal) {
+			if qui.div(gap=8, direction=.Horizontal) {
 				qui.rect(32)
 				qui.rect(32)
 				qui.rect(32)
@@ -115,7 +115,7 @@ spotify :: proc() {
 	}
 
 	middle :: proc() {
-		if qui.div_start(
+		if qui.div(
 			// padding = 8,
 			gap = 8,
 			// background_color = rl.GREEN,
@@ -124,7 +124,7 @@ spotify :: proc() {
 			grow_main = true,
 			align_main = .SpaceBetween,
 		) {
-			if qui.div_start(
+			if qui.div(
 				background_color = rl.PINK,
 				padding = 8,
 				grow_cross = true,
@@ -132,7 +132,7 @@ spotify :: proc() {
 			) {
 				qui.rect(64)
 			}
-			if qui.div_start(
+			if qui.div(
 				background_color = rl.YELLOW,
 				padding = 8,
 				grow_main = true,
@@ -142,7 +142,7 @@ spotify :: proc() {
 			) {
 				qui.rect(64)
 			}
-			if qui.div_start(
+			if qui.div(
 				background_color = rl.GOLD,
 				padding = 8,
 				grow_cross = true,
@@ -154,7 +154,7 @@ spotify :: proc() {
 	}
 
 	bottom :: proc() {
-		if qui.div_start(
+		if qui.div(
 			background_color = rl.BLUE,
 			direction = .Horizontal,
 			padding = 8,
@@ -162,13 +162,13 @@ spotify :: proc() {
 			align_main = .SpaceBetween,
 			align_cross = .Center,
 		) {
-			if qui.div_start(
+			if qui.div(
 				gap = 8,
 				direction = .Horizontal,
 				align_cross = .Center,
 			) {
 				qui.rect(64)
-				if qui.div_start(
+				if qui.div(
 					align_main = .SpaceBetween,
 					grow_cross = true,
 				) {
@@ -178,11 +178,11 @@ spotify :: proc() {
 				}
 				qui.rect(32)
 			}
-			if qui.div_start(
+			if qui.div(
 				gap = 8,
 				align_cross = .Center,
 			) {
-				if qui.div_start(
+				if qui.div(
 					direction = .Horizontal,
 					gap = 8,
 					align_cross = .Center,
@@ -193,11 +193,11 @@ spotify :: proc() {
 					qui.rect(32)
 					qui.rect(32)
 				}
-				if qui.div_start() {
+				if qui.div() {
 					qui.rect({256, 4})
 				}
 			}
-			if qui.div_start(gap=8, direction=.Horizontal) {
+			if qui.div(gap=8, direction=.Horizontal) {
 				qui.rect(32)
 				qui.rect(32)
 				qui.rect(32)
@@ -205,7 +205,7 @@ spotify :: proc() {
 		}
 	}
 
-	if qui.div_start(
+	if qui.div(
 		// const_size = {800, 600},
 		const_size = window_size(),
 		gap = 8,

@@ -69,7 +69,7 @@ Direction :: enum {
 // use this is an if statement like
 // if div_start() { rect() }
 // so it does div_end automatically
-div_start :: proc(
+div :: proc(
 	direction := Direction.Vertical,
 	gap: f32 = 0,
 	padding: f32 = 0,
@@ -127,6 +127,7 @@ rect :: proc(size: vec2, color := rl.BLACK) {
 }
 
 Text :: struct {
+	fmtstr: string,
 	text: string,
 	style: struct {
 		color: rl.Color,
@@ -142,6 +143,7 @@ text :: proc(
 ) {
 	elem := new(Element, state.frame_allocator)
 	text: Text
+	text.fmtstr = fmtstr
 	text.text = fmt.aprintf(fmtstr, ..args, allocator = state.frame_allocator)
 	text.style.color = color
 	elem.widget = text
